@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Phiếu tầm soát tiểu đường</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<div class="sheet">
+
+  <header class="letterhead">
+    <div class="letterhead-mark" aria-hidden="true">
+      <svg viewBox="0 0 48 48" width="40" height="40">
+        <circle cx="24" cy="24" r="22" fill="none" stroke="currentColor" stroke-width="1.5"/>
+        <path d="M24 10 C24 18 14 20 14 28 A10 10 0 0 0 34 28 C34 20 24 18 24 10 Z" fill="none" stroke="currentColor" stroke-width="1.5"/>
+      </svg>
+    </div>
+    <div class="letterhead-text">
+      <p class="eyebrow">Phòng xét nghiệm điện tử · Hỗ trợ quyết định lâm sàng</p>
+      <h1>Phiếu tầm soát nguy cơ tiểu đường</h1>
+    </div>
+    <div class="letterhead-meta">
+      <dl>
+        <div><dt>Mẫu ước lượng bởi</dt><dd>{{ best_model }}</dd></div>
+        <div><dt>Số ca huấn luyện</dt><dd>4.688 hồ sơ</dd></div>
+      </dl>
+    </div>
+  </header>
+
+  <section class="validation" aria-label="Độ tin cậy mô hình">
+    <p class="validation-label">Độ tin cậy đo trên tập kiểm định giữ riêng (test set)</p>
+    <div class="validation-row">
+      <div class="validation-stat">
+        <span class="validation-value">{{ "%.1f"|format(metrics.accuracy * 100) }}<small>%</small></span>
+        <span class="validation-key">Độ chính xác</span>
+      </div>
+      <div class="validation-stat">
+        <span class="validation-value">{{ "%.1f"|format(metrics.recall * 100) }}<small>%</small></span>
+        <span class="validation-key">Độ nhạy (Recall)</span>
+      </div>
+      <div class="validation-stat">
+        <span class="validation-value">{{ "%.1f"|format(metrics.f1 * 100) }}<small>%</small></span>
+        <span class="validation-key">F1-score</span>
+      </div>
+    </div>
+  </section>
+
+  <main class="body-grid">
+
+    <form id="predict-form" class="panel intake" aria-label="Nhập chỉ số bệnh nhân">
+      <div class="panel-head">
+        <h2>Chỉ số bệnh nhân</h2>
+        <span class="panel-head-note">13 mục · đối chiếu khoảng tham chiếu bên phải</span>
+      </div>
+
+      <div class="intake-row intake-row--gender">
+        <label for="f-GioiTinh">Giới tính</label>
+        <select id="f-GioiTinh" name="GioiTinh">
+          <option value="Nam">Nam</option>
+          <option value="Nữ">Nữ</option>
+        </select>
+        <span class="ref-cell">—</span>
+      </div>
+
+      {% for key, label, unit, low, high in fields %}
+      <div class="intake-row" data-field="{{ key }}">
+        <label for="f-{{ key }}">{{ label }}</label>
+        <div class="intake-input">
+          <input type="number" step="any" id="f-{{ key }}" name="{{ key }}" inputmode="decimal" placeholder="—">
+          <span class="unit">{{ unit }}</span>
+        </div>
+        <span class="ref-cell">{{ low }}–{{ high }}</span>
+      </div>
+      {% endfor %}
+
+      <div class="intake-foot">
+        <div class="sample-picks">
+          <span>Điền nhanh:</span>
+          <button type="button" id="btn-sample-low" class="pill">Hồ sơ trong ngưỡng</button>
+          <button type="button" id="btn-sample-high" class="pill">Hồ sơ vượt ngưỡng</button>
+        </div>
+        <button type="submit" class="submit-btn">Đối chiếu &amp; lập phiếu</button>
+      </div>
+      <p id="form-error" class="form-error" role="alert"></p>
+    </form>
+
+    <aside class="panel verdict" id="verdict" aria-label="Kết luận tầm soát">
+      <div class="panel-head">
+        <h2>Kết luận</h2>
+      </div>
+
+      <div id="verdict-empty" class="verdict-empty">
+        <p>Chưa có dữ liệu để đối chiếu.</p>
+        <p>Điền phiếu bên trái rồi bấm <em>“Đối chiếu &amp; lập phiếu”</em>.</p>
+      </div>
+
+      <div id="verdict-content" class="verdict-content hidden">
+        <div class="stamp-row">
+          <div class="stamp" id="stamp">
+            <svg viewBox="0 0 120 120" class="stamp-ring" aria-hidden="true">
+              <circle cx="60" cy="60" r="54" />
+            </svg>
+            <span class="stamp-pct" id="prob-value">0%</span>
+            <span class="stamp-label" id="level-badge">—</span>
+          </div>
+          <p class="stamp-caption">ước lượng xác suất nguy cơ</p>
+        </div>
+
+        <p class="disclaimer">Đây là ước lượng thống kê, không phải chẩn đoán y khoa. Trao đổi với bác sĩ để có kết luận chính thức.</p>
+
+        <div class="findings">
+          <h3>Yếu tố chi phối kết quả</h3>
+          <ol id="explain-list" class="findings-list"></ol>
+        </div>
+      </div>
+    </aside>
+
+  </main>
+
+  <section class="panel model-log" aria-label="Nhật ký so sánh mô hình">
+    <div class="panel-head">
+      <h2>Nhật ký huấn luyện — 3 mô hình đối chứng</h2>
+      <span class="panel-head-note">đánh giá trên tập kiểm định (validation)</span>
+    </div>
+    <table>
+      <thead>
+        <tr><th>Mô hình</th><th>Accuracy</th><th>Recall</th><th>F1-score</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for row in comparison %}
+        <tr {% if row.model == best_model %}class="chosen"{% endif %}>
+          <td>{{ row.model }}</td>
+          <td><span class="mono">{{ "%.1f"|format(row.accuracy * 100) }}%</span></td>
+          <td><span class="mono">{{ "%.1f"|format(row.recall * 100) }}%</span></td>
+          <td><span class="mono">{{ "%.1f"|format(row.f1 * 100) }}%</span></td>
+          <td>{% if row.model == best_model %}<span class="tag">Được chọn phục vụ</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+
+  <footer class="colophon">
+    <span>Demo giao diện web — chạy cục bộ (localhost), không thay thế tư vấn y tế.</span>
+  </footer>
+</div>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
