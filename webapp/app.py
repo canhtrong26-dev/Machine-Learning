@@ -1,13 +1,21 @@
 import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import pandas as pd
 from flask import Flask, jsonify, render_template, request
 
 import ml_logic as loi
 
-app = Flask(__name__)
+_APP_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(
+    __name__,
+    template_folder=os.path.join(_APP_DIR, "templates"),
+    static_folder=os.path.join(_APP_DIR, "static"),
+)
 
-_CSV_PATH = os.path.join(os.path.dirname(__file__), "CSDL_TieuDuong.csv")
+_CSV_PATH = os.path.join(_APP_DIR, "CSDL_TieuDuong.csv")
 _ket_qua = loi.huan_luyen_toan_bo(_CSV_PATH)
 
 _best_name = _ket_qua["best_name"]
