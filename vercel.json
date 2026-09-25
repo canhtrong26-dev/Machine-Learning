@@ -1,9 +1,12 @@
 {
   "builds": [
-    { "src": "webapp/app.py", "use": "@vercel/python" }
+    {
+      "src": "webapp/app.py",
+      "use": "@vercel/python",
+      "config": { "includeFiles": ["webapp/static/**", "webapp/templates/**", "webapp/CSDL_TieuDuong.csv"] }
+    }
   ],
   "routes": [
-    { "src": "/static/(.*)", "dest": "webapp/static/$1" },
     { "src": "/(.*)", "dest": "webapp/app.py" }
   ]
 }
